@@ -31,8 +31,8 @@ int main (int argc, char ** argv){
   char buf[MAX_BUFFER];                         // line buffer
   char *args[MAX_ARGS];                         // pointers to arg strings
   char **arg;                                   // working pointer through args
-  char *prompt = ">";                         // shell prompt
-  int returnCode;
+  char *prompt = "# ";                         // shell prompt
+  int returnCode, killer;
 
   /* Keep reading input until "quit" command or EOF of redirected input */
 
@@ -60,7 +60,7 @@ int main (int argc, char ** argv){
           continue;
         }
 
-        else if(strcmp(args[0], "exit") == 0)            // "exit" command
+        else if(strcmp(args[0], "quit") == 0)            // "exit" command
           break;
 
         else if(strcmp(args[0], "run") == 0){
@@ -69,6 +69,36 @@ int main (int argc, char ** argv){
 
             printf("Child exited with PID of: %d", returnCode);
           }
+          else{
+            printf("Enter a command and try again\n");
+            continue;
+          }
+        }
+
+        // background
+        else if(strcmp(args[0], "background") == 0){
+          if(args[1]){
+            returnCode = background(args);
+            printf("PID Started: %d\n", returnCode);
+          }
+          else{
+            printf("Enter a command and try again\n");
+            continue;
+          }
+        }
+
+        // Murder
+        else if(strcmp(args[0], "murder") == 0){
+          if(args[1]){
+            killer = murder(atoi(args[1]));
+            if(killer != 0)
+              printf("Process %s killed", args[1]);
+          }
+          else{
+            printf("Enter a command and try again\n");
+            continue;
+          }
+
         }
 
         // else pass command onto OS and reset arg
@@ -117,10 +147,39 @@ int runProcess(char **args){
     }
   }
 
+int background(char **args){
+  int pid;
+  int foo;
+  int waiter;
+
+  pid = fork();
+
+  if(pid != 0)
+    return pid;
+
+  else{
+    execvp(*(args+1), args+1);
+    printf("Error executing\n");
+    abort();
+    return -1;
+  }
+}
+
+int murder(int pid){
+  int killer;
+  killer = kill(pid, SIGTERM);
+  if(killer != 0){
+    printf("Error executing\n");
+    return 0;
+  }
+  printf("Process killed\n");
+  return killer;
+}
+
 void welcome(){
   printf("Welcome to Manny's Shell!\n"
       "Use 'run <command> <arg1> <arg2> ... <argn>' to execute commands\n"
       "Example: run mkdir ./myNewFolder\n"
       "Use 'clear' to clear shell\n"
-      "Use 'exit' to close shell\n");
+      "Use 'quit' to close shell\n");
 }
